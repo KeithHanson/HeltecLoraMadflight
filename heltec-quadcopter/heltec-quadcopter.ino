@@ -102,9 +102,9 @@ Copyright (c) 2023-2024 https://madflight.com
 //#define HW_PIN_RCIN_INVERTER pp //only used for STM32 targets
 
 //GPS:
-#define HW_PIN_GPS_RX     41
-#define HW_PIN_GPS_TX     42
-#define GPS_BAUD  115200
+#define HW_PIN_GPS_RX     19
+#define HW_PIN_GPS_TX     20
+#define GPS_BAUD  9600
 
 
 //#define HW_PIN_GPS_INVERTER pp //only used for STM32 targets
@@ -215,6 +215,7 @@ float B_radio;
 //Note: most madflight modules are header only. By placing the madflight include here allows the modules to access the global variables without declaring them extern.
 #include <madflight.h>
 
+
 //========================================================================================================================//
 //                                                       SETUP()                                                          //
 //========================================================================================================================//
@@ -267,11 +268,13 @@ void setup() {
   cli.calibrate_gyro();
 
   gps_setup(); //GPS
-  gps_debug();
+ 
   
   cli.welcome();
 
   led.enable(); //Set LED off to signal end of startup, and enable blinking by imu_loop()
+
+  
 }
 
 //========================================================================================================================//
@@ -281,6 +284,7 @@ void setup() {
 void loop() {
   cli.loop(); //process CLI commands
   gps_loop();
+  out_armed = false;
 }
 
 //========================================================================================================================//
@@ -300,7 +304,7 @@ void imu_loop() {
   rcin_Normalize(); //Convert raw commands to normalized values based on saturated control limits
 
   //Uncomment to debug without remote (and no battery!) - pitch drone up: motors m1,m3 should increase and m2,m4 decrease; bank right: m1,m2 increase; yaw right: m1,m4 increase
-  //rcin_thro = 0.5; rcin_thro_is_low = false; rcin_roll = 0; rcin_pitch = 0; rcin_yaw = 0; rcin_armed = true; rcin_aux = 0; out_armed = true;
+  rcin_thro = 0.5; rcin_thro_is_low = false; rcin_roll = 0; rcin_pitch = 0; rcin_yaw = 0; rcin_armed = true; rcin_aux = 0; out_armed = true;
 
   //PID Controller RATE or ANGLE - SELECT ONE:
   control_Rate(rcin_thro_is_low); //Stabilize on rate setpoint
@@ -542,14 +546,14 @@ void out_KillSwitchAndFailsafe() {
   }
 
   //Change to DISARMED when radio armed switch is in disarmed position, or if radio lost connection
-   if (out_armed && (!rcin_armed || !rcin.connected())) {
+  /* if (out_armed && (!rcin_armed || !rcin.connected())) {
     out_armed = false;
     if(!rcin_armed) {
       Serial.println("OUT: DISARMED (arm switch)");
     }else{
       Serial.println("OUT: DISARMED (rcin lost connection)");
     }
-  }
+  }*/
 
   //If armed and throttle is low -> set motor outputs to out_armed_speed
   if(out_armed && rcin_thro_is_low) for(int i=0;i<out_MOTOR_COUNT;i++) out_command[i] = out_armed_speed; 
